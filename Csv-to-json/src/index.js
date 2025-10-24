@@ -24,7 +24,7 @@ app.post("/convert-csv", async (req, res) => {
     const ageGroups = { "<20": 0, "20-40": 0, "40-60": 0, "60+": 0 };
 
     for (const part of records) {
-      const { "name.firstName": first, "name.lastName": last, age } = r;
+      const { "name.firstName": first, "name.lastName": last, age } = part;
       const address = {
         line1: part["address.line1"],
         line2: part["address.line2"],
@@ -35,7 +35,7 @@ app.post("/convert-csv", async (req, res) => {
       const fullName = `${first} ${last}`.trim(); //name to fullname
 
       //making additional column to store rest of the data
-      const additionalPart = { ...r };
+      const additionalPart = { ...part };
       delete additionalPart["name.firstName"];
       delete additionalPart["name.lastName"];
       delete additionalPart.age;
@@ -48,12 +48,12 @@ app.post("/convert-csv", async (req, res) => {
       await db.query(
         `INSERT INTO users (name, age, address, additional_info)
          VALUES ($1, $2, $3, $4)`,
-        [fullName, age, JSON.stringify(address), JSON.stringify(additional)]
+        [fullName, age, JSON.stringify(address), JSON.stringify(additionalPart)]
       );
 
       // Age group calculation from data in db 
-      const { records } = await db.query("SELECT age FROM users");
-      for (const row of records) {
+      const { rows } = await db.query("SELECT age FROM users");
+      for (const row of rows) {
         const age = parseInt(row.age, 10); //base 10
         if (age < 20) ageGroups["<20"]++;
         else if (age < 40) ageGroups["20-40"]++;
